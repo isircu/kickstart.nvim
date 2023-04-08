@@ -1,44 +1,9 @@
---[[
-
-=====================================================================
-==================== READ THIS BEFORE CONTINUING ====================
-=====================================================================
-
-Kickstart.nvim is *not* a distribution.
-
-Kickstart.nvim is a template for your own configuration.
-  The goal is that you can read every line of code, top-to-bottom, and understand
-  what your configuration is doing.
-
-  Once you've done that, you should start exploring, configuring and tinkering to
-  explore Neovim!
-
-  If you don't know anything about Lua, I recommend taking some time to read through
-  a guide. One possible example:
-  - https://learnxinyminutes.com/docs/lua/
-
-  And then you can explore or search through `:help lua-guide`
-
-
-Kickstart Guide:
-
-I have left several `:help X` comments throughout the init.lua
-You should run that command and read that help section for more information.
-
-In addition, I have some `NOTE:` items throughout the file.
-These are for you, the reader to help understand what is happening. Feel free to delete
-them once you know what you're doing, but they should serve as a guide for when you
-are first encountering a few different constructs in your nvim config.
-
-I hope you enjoy your Neovim journey,
-- TJ
-
-P.S. You can delete this when you're done too. It's your config now :)
---]]
 
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are required (otherwise wrong leader will be used)
+require('core/autocmds')
+
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
@@ -112,11 +77,11 @@ require('lazy').setup({
     },
   },
 
-  { -- Theme inspired by Atom
-    'navarasu/onedark.nvim',
+  {
+    'Mofiqul/dracula.nvim',
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme 'onedark'
+      vim.cmd.colorscheme 'dracula'
     end,
   },
 
@@ -126,9 +91,12 @@ require('lazy').setup({
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'onedark',
+        theme = 'dracula',
         component_separators = '|',
         section_separators = '',
+        disabled_filetypes = {
+          statusline = {'NvimTree'}
+        },
       },
     },
   },
@@ -171,6 +139,11 @@ require('lazy').setup({
       pcall(require('nvim-treesitter.install').update { with_sync = true })
     end,
   },
+  'kyazdani42/nvim-web-devicons',
+  'kyazdani42/nvim-tree.lua',
+  --'p00f/clangd_extensions.nvim',
+  'numToStr/FTerm.nvim',
+  'editorconfig/editorconfig-vim',
 
   -- NOTE: Next Step on Your Neovim Journey: Add/Configure additional "plugins" for kickstart
   --       These are some example plugins that I've included in the kickstart repository.
@@ -192,29 +165,56 @@ require('lazy').setup({
 -- [[ Setting options ]]
 -- See `:help vim.o`
 
--- Set highlight on search
+-- Search stuff
 vim.o.hlsearch = false
+vim.o.ignorecase = true
+vim.o.smartcase = true
+vim.o.incsearch = true
+
+-- Convert tab to spaces
+vim.o.expandtab = true
+-- Indent width such as for >> keybindings
+vim.o.shiftwidth = 4
+vim.o.tabstop = 4
+vim.o.softtabstop = 4
+vim.o.smartindent = true
+vim.o.smarttab = true
 
 -- Make line numbers default
 vim.wo.number = true
+--vim.o.relativenumber = true
 
--- Enable mouse mode
-vim.o.mouse = 'a'
+vim.o.splitbelow = true
+vim.o.scrolloff = 5
+
+vim.o.fileencoding = 'utf-8'
+
+vim.o.cursorline = true
+
+-- Disable mouse
+vim.o.mouse = nil
+
+vim.o.errorbells = false
+
+vim.o.swapfile = false
+vim.o.backup = false
+vim.o.undofile = true
+vim.o.undodir = "/home/isircu/.nvim/undodir"
+
+-- Keep buffers in the background
+vim.o.hidden = true
+
+-- Don't show mode since it's shown in lualine
+vim.o.showmode = false
 
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.o.clipboard = 'unnamedplus'
+--vim.o.clipboard = 'unnamedplus'
 
 -- Enable break indent
+vim.o.wrap = true
 vim.o.breakindent = true
-
--- Save undo history
-vim.o.undofile = true
-
--- Case insensitive searching UNLESS /C or capital in search
-vim.o.ignorecase = true
-vim.o.smartcase = true
 
 -- Keep signcolumn on by default
 vim.wo.signcolumn = 'yes'
@@ -230,6 +230,9 @@ vim.o.completeopt = 'menuone,noselect'
 -- NOTE: You should make sure your terminal supports this
 vim.o.termguicolors = true
 
+-- Make editor config play nice with fugitive and files over ssh
+vim.g.EditorConfig_exclude_patterns = {'fugitive://.*', 'scp://.*'}
+
 -- [[ Basic Keymaps ]]
 
 -- Keymaps for better default experience
@@ -239,17 +242,6 @@ vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
-
--- [[ Highlight on yank ]]
--- See `:help vim.highlight.on_yank()`
-local highlight_group = vim.api.nvim_create_augroup('YankHighlight', { clear = true })
-vim.api.nvim_create_autocmd('TextYankPost', {
-  callback = function()
-    vim.highlight.on_yank()
-  end,
-  group = highlight_group,
-  pattern = '*',
-})
 
 -- [[ Configure Telescope ]]
 -- See `:help telescope` and `:help telescope.setup()`
@@ -278,11 +270,11 @@ vim.keymap.set('n', '<leader>/', function()
   })
 end, { desc = '[/] Fuzzily search in current buffer' })
 
-vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
-vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
-vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
-vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
-vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
+vim.keymap.set('n', '<leader>ff', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
+vim.keymap.set('n', '<leader>fh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
+vim.keymap.set('n', '<leader>fw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
+vim.keymap.set('n', '<leader>fg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>fd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
 
 -- [[ Configure Treesitter ]]
 -- See `:help nvim-treesitter`
@@ -407,7 +399,6 @@ end
 --  Add any additional override configuration in the following tables. They will be passed to
 --  the `settings` field of the server config. You must look up that documentation yourself.
 local servers = {
-  -- clangd = {},
   -- gopls = {},
   -- pyright = {},
   -- rust_analyzer = {},
@@ -447,6 +438,23 @@ mason_lspconfig.setup_handlers {
     }
   end,
 }
+
+require('lspconfig').clangd.setup {
+      single_file_support = true,
+      cmd = { "clangd",
+          "-j=3",
+          "--background-index",
+          "--clang-tidy",
+          "--header-insertion=never",
+          "--completion-style=detailed",
+          "--header-insertion-decorators=0",
+          --"--query-driver=/home/isircu/ws/mozart/**/aarch64-mozart-linux-g++",
+          "--query-driver=/**/mozart/**/aarch64-mozart-linux-g++"
+      },
+      capabilities = capabilities,
+      on_attach = on_attach,
+}
+
 
 -- nvim-cmp setup
 local cmp = require 'cmp'
