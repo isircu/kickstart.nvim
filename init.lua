@@ -1,4 +1,3 @@
-
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are required (otherwise wrong leader will be used)
@@ -40,7 +39,8 @@ require('lazy').setup({
 
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
-  { -- LSP Configuration & Plugins
+  {
+    -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs to stdpath for neovim
@@ -56,14 +56,16 @@ require('lazy').setup({
     },
   },
 
-  { -- Autocompletion
+  {
+    -- Autocompletion
     'hrsh7th/nvim-cmp',
     dependencies = { 'hrsh7th/cmp-nvim-lsp', 'L3MON4D3/LuaSnip', 'saadparwaiz1/cmp_luasnip' },
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
-  { -- Adds git releated signs to the gutter, as well as utilities for managing changes
+  { 'folke/which-key.nvim',          opts = {} },
+  {
+    -- Adds git releated signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
     opts = {
       -- See `:help gitsigns.txt`
@@ -85,23 +87,23 @@ require('lazy').setup({
     end,
   },
 
-  { -- Set lualine as statusline
+  {
+    -- Set lualine as statusline
     'nvim-lualine/lualine.nvim',
-    -- See `:help lualine.txt`
-    opts = {
-      options = {
-        icons_enabled = false,
-        theme = 'dracula',
-        component_separators = '|',
-        section_separators = '',
-        disabled_filetypes = {
-          statusline = {'NvimTree'}
-        },
-      },
+    dependencies = {
+      "nvim-tree/nvim-web-devicons",
     },
   },
 
-  { -- Add indentation guides even on blank lines
+  {
+    "SmiteshP/nvim-navic",
+    dependencies = {
+      'neovim/nvim-lspconfig',
+    },
+  },
+
+  {
+    -- Add indentation guides even on blank lines
     'lukas-reineke/indent-blankline.nvim',
     -- Enable `lukas-reineke/indent-blankline.nvim`
     -- See `:help indent_blankline.txt`
@@ -112,7 +114,7 @@ require('lazy').setup({
   },
 
   -- "gc" to comment visual regions/lines
-  { 'numToStr/Comment.nvim', opts = {} },
+  { 'numToStr/Comment.nvim',         opts = {} },
 
   -- Fuzzy Finder (files, lsp, etc)
   { 'nvim-telescope/telescope.nvim', version = '*', dependencies = { 'nvim-lua/plenary.nvim' } },
@@ -130,7 +132,8 @@ require('lazy').setup({
     end,
   },
 
-  { -- Highlight, edit, and navigate code
+  {
+    -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     dependencies = {
       'nvim-treesitter/nvim-treesitter-textobjects',
@@ -139,8 +142,17 @@ require('lazy').setup({
       pcall(require('nvim-treesitter.install').update { with_sync = true })
     end,
   },
-  'kyazdani42/nvim-web-devicons',
-  'kyazdani42/nvim-tree.lua',
+
+  {
+    "nvim-tree/nvim-tree.lua",
+    version = "*",
+    dependencies = {
+      "nvim-tree/nvim-web-devicons",
+    },
+    config = function()
+      require("nvim-tree").setup {}
+    end,
+  },
   --'p00f/clangd_extensions.nvim',
   'numToStr/FTerm.nvim',
   'editorconfig/editorconfig-vim',
@@ -231,7 +243,7 @@ vim.o.completeopt = 'menuone,noselect'
 vim.o.termguicolors = true
 
 -- Make editor config play nice with fugitive and files over ssh
-vim.g.EditorConfig_exclude_patterns = {'fugitive://.*', 'scp://.*'}
+vim.g.EditorConfig_exclude_patterns = { 'fugitive://.*', 'scp://.*' }
 
 -- [[ Basic Keymaps ]]
 
@@ -270,11 +282,18 @@ vim.keymap.set('n', '<leader>/', function()
   })
 end, { desc = '[/] Fuzzily search in current buffer' })
 
-vim.keymap.set('n', '<leader>ff', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
-vim.keymap.set('n', '<leader>fh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
-vim.keymap.set('n', '<leader>fw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
-vim.keymap.set('n', '<leader>fg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
-vim.keymap.set('n', '<leader>fd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
+vim.keymap.set('n', '<leader>ff', require('telescope.builtin').find_files, { desc = '[F]ind [F]iles' })
+vim.keymap.set('n', '<leader>fh', require('telescope.builtin').help_tags, { desc = '[F]ind [H]elp' })
+vim.keymap.set('n', '<leader>fw', require('telescope.builtin').grep_string, { desc = '[F]ind current [W]ord' })
+vim.keymap.set('n', '<leader>fg', require('telescope.builtin').live_grep, { desc = '[F]ind by [G]rep' })
+vim.keymap.set('n', '<leader>fd', require('telescope.builtin').diagnostics, { desc = '[F]ind [D]iagnostics' })
+
+local function lspformat()
+  print("Running lspformat")
+  vim.lsp.buf.format()
+end
+
+vim.keymap.set('n', '<leader>bf', lspformat, { desc = 'Does this work' })
 
 -- [[ Configure Treesitter ]]
 -- See `:help nvim-treesitter`
@@ -350,7 +369,7 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = "Open diagn
 
 -- LSP settings.
 --  This function gets run when an LSP connects to a particular buffer.
-local on_attach = function(_, bufnr)
+local on_attach = function(client, bufnr)
   -- NOTE: Remember that lua is a real programming language, and as such it is possible
   -- to define small helper and utility functions so you don't have to repeat yourself
   -- many times.
@@ -391,6 +410,13 @@ local on_attach = function(_, bufnr)
   vim.api.nvim_buf_create_user_command(bufnr, 'Format', function(_)
     vim.lsp.buf.format()
   end, { desc = 'Format current buffer with LSP' })
+
+  --nvim-navic
+  if client.server_capabilities.documentSymbolProvider then
+    local navic = require "nvim-navic"
+    navic.attach(client, bufnr)
+    require('core/lualine')
+  end
 end
 
 -- Enable the following language servers
@@ -440,19 +466,19 @@ mason_lspconfig.setup_handlers {
 }
 
 require('lspconfig').clangd.setup {
-      single_file_support = true,
-      cmd = { "clangd",
-          "-j=3",
-          "--background-index",
-          "--clang-tidy",
-          "--header-insertion=never",
-          "--completion-style=detailed",
-          "--header-insertion-decorators=0",
-          --"--query-driver=/home/isircu/ws/mozart/**/aarch64-mozart-linux-g++",
-          "--query-driver=/**/mozart/**/aarch64-mozart-linux-g++"
-      },
-      capabilities = capabilities,
-      on_attach = on_attach,
+  single_file_support = true,
+  cmd = { "clangd",
+    "-j=3",
+    "--background-index",
+    "--clang-tidy",
+    "--header-insertion=never",
+    "--completion-style=detailed",
+    "--header-insertion-decorators=0",
+    --"--query-driver=/home/isircu/ws/mozart/**/aarch64-mozart-linux-g++",
+    "--query-driver=/**/mozart/**/aarch64-mozart-linux-g++"
+  },
+  capabilities = capabilities,
+  on_attach = on_attach,
 }
 
 
@@ -500,6 +526,22 @@ cmp.setup {
     { name = 'luasnip' },
   },
 }
+
+require('core/nvimtree')
+--require('core/lualine')
+
+-- Search-replace word under cursor
+vim.keymap.set("n", "<leader>sr", ":%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<Left><Left><Left>")
+
+-- Copy/paste from system clipboard
+vim.keymap.set({ 'n', 'x' }, 'cp', '"+y')
+vim.keymap.set({ 'n', 'x' }, 'cv', '"+p')
+-- Delete without changing the registers
+vim.keymap.set({ 'n', 'x' }, 'x', '"_x')
+
+--vim.keymap.set('n', '<leader>e', require('nvim-tree.api.tree').find_file, { desc = 'Toggle NvimTree and highlight current file' })
+vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeFindFileToggle<cr>',
+  { desc = 'Toggle NvimTree and highlight current file' })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
